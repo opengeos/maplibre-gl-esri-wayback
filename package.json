@@ -1,7 +1,7 @@
 {
-  "name": "maplibre-gl-plugin-template",
+  "name": "maplibre-gl-esri-wayback",
   "version": "0.2.2",
-  "description": "A template for creating MapLibre GL JS plugins with TypeScript and React support",
+  "description": "A MapLibre GL JS control for visualizing Esri World Imagery Wayback releases",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -27,7 +27,7 @@
         "default": "./dist/react.cjs"
       }
     },
-    "./style.css": "./dist/maplibre-gl-plugin-template.css"
+    "./style.css": "./dist/maplibre-gl-esri-wayback.css"
   },
   "files": [
     "dist",
@@ -41,13 +41,14 @@
     "dev": "vite",
     "build": "tsc -p tsconfig.build.json && vite build",
     "build:examples": "vite build --config vite.examples.config.ts",
+    "typecheck:dist": "tsc -p tsconfig.dist.json",
     "preview": "vite preview",
     "test": "vitest --run",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build && npm run typecheck:dist"
   },
   "keywords": [
     "maplibre",
@@ -55,14 +56,17 @@
     "map",
     "plugin",
     "control",
+    "esri",
+    "wayback",
+    "imagery",
     "react",
     "typescript"
   ],
-  "author": "Your Name",
+  "author": "giswqs",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/maplibre-gl-plugin-template.git"
+    "url": "https://github.com/opengeos/maplibre-gl-esri-wayback.git"
   },
   "peerDependencies": {
     "maplibre-gl": ">=3.0.0",
@@ -97,5 +101,8 @@
     "vite": "^6.0.0",
     "vite-plugin-dts": "^4.3.0",
     "vitest": "^2.1.0"
+  },
+  "dependencies": {
+    "@esri/wayback-core": "^1.0.10"
   }
 }

@@ -1,18 +1,43 @@
-// Import styles
-import './lib/styles/plugin-control.css';
+import './lib/styles/esri-wayback-control.css';
 
-// Main entry point - Core exports
-export { PluginControl } from './lib/core/PluginControl';
+export { EsriWaybackControl } from './lib/core/EsriWaybackControl';
 
-// Type exports
 export type {
-  PluginControlOptions,
-  PluginState,
-  PluginControlEvent,
-  PluginControlEventHandler,
+  EsriWaybackControlOptions,
+  EsriWaybackControlPosition,
+  EsriWaybackState,
+  EsriWaybackRelease,
+  EsriWaybackMetadata,
+  EsriWaybackPoint,
+  EsriWaybackControlEvent,
+  EsriWaybackControlEventHandler,
 } from './lib/core/types';
 
-// Utility exports
+export type {
+  LayerVisibilitySnapshot,
+  WaybackStyle,
+  WaybackStyleLayer,
+} from './lib/core/wayback';
+
+export {
+  DEFAULT_LAYER_ID,
+  DEFAULT_SOURCE_ID,
+  PERSISTENT_LAYER_PREFIX,
+  findReleaseByNumber,
+  formatWaybackDate,
+  getChronologicalWaybackItems,
+  getFirstSymbolLayerId,
+  getHideableLayerIds,
+  getPersistentWaybackLayerId,
+  getPersistentWaybackSourceId,
+  getReleaseBySliderIndex,
+  getReleaseSliderIndex,
+  hideBaseLayers,
+  restoreLayerVisibilities,
+  toLayerIdPart,
+  toMapLibreTileUrl,
+} from './lib/core/wayback';
+
 export {
   clamp,
   formatNumericValue,

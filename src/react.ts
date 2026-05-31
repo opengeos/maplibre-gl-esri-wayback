@@ -1,14 +1,16 @@
-// React entry point
-export { PluginControlReact } from './lib/core/PluginControlReact';
+export { EsriWaybackControlReact } from './lib/core/EsriWaybackControlReact';
 
-// React hooks
-export { usePluginState } from './lib/hooks';
+export { useEsriWaybackState } from './lib/hooks';
+export type { UseEsriWaybackStateReturn } from './lib/hooks';
 
-// Re-export types for React consumers
 export type {
-  PluginControlOptions,
-  PluginState,
-  PluginControlReactProps,
-  PluginControlEvent,
-  PluginControlEventHandler,
+  EsriWaybackControlOptions,
+  EsriWaybackControlPosition,
+  EsriWaybackState,
+  EsriWaybackControlReactProps,
+  EsriWaybackRelease,
+  EsriWaybackMetadata,
+  EsriWaybackPoint,
+  EsriWaybackControlEvent,
+  EsriWaybackControlEventHandler,
 } from './lib/core/types';
