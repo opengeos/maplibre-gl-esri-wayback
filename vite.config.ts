@@ -8,8 +8,9 @@ export default defineConfig({
     react(),
     dts({
       include: ['src'],
-      outDir: 'dist/types',
-      rollupTypes: false,
+      entryRoot: 'src',
+      outDirs: 'dist/types',
+      bundleTypes: false,
     }),
   ],
   resolve: {
