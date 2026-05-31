@@ -1,0 +1,289 @@
+.esri-wayback-control {
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+  color: #1f2933;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.esri-wayback-control-toggle {
+  align-items: center;
+  background: none;
+  border: none;
+  color: #1f2933;
+  cursor: pointer;
+  display: flex;
+  height: 29px;
+  justify-content: center;
+  outline: none;
+  padding: 0;
+  width: 29px;
+}
+
+.esri-wayback-control-toggle:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.esri-wayback-control-icon {
+  align-items: center;
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  line-height: 0;
+  position: relative;
+  width: 100%;
+}
+
+.esri-wayback-control-icon svg {
+  display: block;
+  fill: none;
+  height: 22px;
+  stroke: currentColor;
+  width: 22px;
+}
+
+.esri-wayback-control-panel {
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+  display: none;
+  font-size: 12px;
+  line-height: 1.4;
+  max-height: 540px;
+  max-width: min(420px, calc(100% - 20px));
+  min-width: 260px;
+  overflow: hidden;
+  padding: 8px;
+  position: absolute;
+  z-index: 1000;
+}
+
+.esri-wayback-control-panel.expanded {
+  display: block;
+}
+
+.esri-wayback-control-header {
+  align-items: center;
+  border-bottom: 1px solid #dde3ea;
+  color: #24313f;
+  display: flex;
+  font-weight: 700;
+  gap: 10px;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding: 4px 0 8px;
+}
+
+.esri-wayback-control-title {
+  flex: 1 1 auto;
+  font-size: 13px;
+}
+
+.esri-wayback-control-close {
+  align-items: center;
+  background: transparent;
+  border: none;
+  color: #697586;
+  cursor: pointer;
+  display: flex;
+  font-size: 18px;
+  height: 20px;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  width: 20px;
+}
+
+.esri-wayback-control-close:hover {
+  color: #1f2933;
+}
+
+.esri-wayback-control-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 488px;
+  overflow: hidden;
+}
+
+.esri-wayback-status {
+  color: #5f6b7a;
+  margin: 0;
+  padding: 8px 0;
+}
+
+.esri-wayback-status-error {
+  color: #a33120;
+  font-weight: 600;
+}
+
+.esri-wayback-summary {
+  background: #f4f7f9;
+  border: 1px solid #dde3ea;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+}
+
+.esri-wayback-summary-label,
+.esri-wayback-summary-detail,
+.esri-wayback-release-count {
+  color: #697586;
+  font-size: 11px;
+}
+
+.esri-wayback-summary-value {
+  color: #14212d;
+  font-size: 15px;
+}
+
+.esri-wayback-label {
+  color: #3f4e5d;
+  font-weight: 600;
+}
+
+.esri-wayback-slider {
+  border: 1px solid #dde3ea;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  background: #fff;
+}
+
+.esri-wayback-slider-label-row,
+.esri-wayback-slider-endpoints,
+.esri-wayback-slider-controls {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.esri-wayback-range {
+  accent-color: #2b7bb9;
+  cursor: pointer;
+  margin: 2px 0;
+  width: 100%;
+}
+
+.esri-wayback-slider-endpoints {
+  color: #697586;
+  font-size: 11px;
+}
+
+.esri-wayback-slider-controls {
+  gap: 8px;
+}
+
+.esri-wayback-slider-button {
+  background: #f4f7f9;
+  border: 1px solid #ccd6e0;
+  border-radius: 4px;
+  color: #24313f;
+  cursor: pointer;
+  flex: 1 1 0;
+  font-size: 13px;
+  font-weight: 700;
+  height: 28px;
+}
+
+.esri-wayback-slider-button:hover:not(:disabled) {
+  background: #e8f3fb;
+  border-color: #2b7bb9;
+}
+
+.esri-wayback-slider-button:disabled {
+  color: #9aa6b2;
+  cursor: not-allowed;
+}
+
+.esri-wayback-persistent {
+  border: 1px solid #dde3ea;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+}
+
+.esri-wayback-persistent-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.esri-wayback-input {
+  border: 1px solid #ccd6e0;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 13px;
+  outline: none;
+  padding: 7px 9px;
+  width: 100%;
+}
+
+.esri-wayback-input:focus {
+  border-color: #2b7bb9;
+  box-shadow: 0 0 0 3px rgba(43, 123, 185, 0.16);
+}
+
+.esri-wayback-add-layer-button {
+  background: #24313f;
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  min-height: 30px;
+  padding: 7px 10px;
+}
+
+.esri-wayback-add-layer-button:hover:not(:disabled) {
+  background: #324456;
+}
+
+.esri-wayback-add-layer-button:disabled {
+  background: #ccd6e0;
+  cursor: not-allowed;
+}
+
+.esri-wayback-persistent-status {
+  color: #5f6b7a;
+  font-size: 11px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.esri-wayback-metadata {
+  border-top: 1px solid #dde3ea;
+  padding-top: 8px;
+}
+
+.esri-wayback-metadata h3 {
+  color: #24313f;
+  font-size: 12px;
+  margin: 0 0 6px;
+}
+
+.esri-wayback-metadata dl {
+  display: grid;
+  grid-template-columns: minmax(72px, 0.75fr) minmax(0, 1.25fr);
+  margin: 0;
+  row-gap: 4px;
+}
+
+.esri-wayback-metadata dt {
+  color: #697586;
+  font-weight: 600;
+}
+
+.esri-wayback-metadata dd {
+  color: #1f2933;
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

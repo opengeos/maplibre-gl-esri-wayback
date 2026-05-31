@@ -8,8 +8,9 @@ export default defineConfig({
     react(),
     dts({
       include: ['src'],
-      outDir: 'dist/types',
-      rollupTypes: false,
+      entryRoot: 'src',
+      outDirs: 'dist/types',
+      bundleTypes: false,
     }),
   ],
   resolve: {
@@ -23,7 +24,7 @@ export default defineConfig({
         index: resolve(__dirname, 'src/index.ts'),
         react: resolve(__dirname, 'src/react.ts'),
       },
-      name: 'MapLibrePluginTemplate',
+      name: 'MapLibreGlEsriWayback',
       formats: ['es', 'cjs'],
       fileName: (format, entryName) => {
         const ext = format === 'es' ? 'mjs' : 'cjs';
@@ -39,7 +40,7 @@ export default defineConfig({
           'maplibre-gl': 'maplibregl',
         },
         assetFileNames: (assetInfo) => {
-          if (assetInfo.name === 'style.css') return 'maplibre-gl-plugin-template.css';
+          if (assetInfo.name === 'style.css') return 'maplibre-gl-esri-wayback.css';
           return assetInfo.name || '';
         },
       },

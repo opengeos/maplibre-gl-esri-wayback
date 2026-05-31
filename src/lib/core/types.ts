@@ -1,80 +1,146 @@
 import type { Map } from 'maplibre-gl';
+import type { WaybackItem, WaybackMetadata } from '@esri/wayback-core';
 
-/**
- * Options for configuring the PluginControl
- */
-export interface PluginControlOptions {
+export type EsriWaybackControlPosition =
+  | 'top-left'
+  | 'top-right'
+  | 'bottom-left'
+  | 'bottom-right';
+
+export type EsriWaybackRelease = WaybackItem;
+export type EsriWaybackMetadata = WaybackMetadata | null;
+
+export interface EsriWaybackPoint {
+  longitude: number;
+  latitude: number;
+}
+
+export interface EsriWaybackControlOptions {
   /**
-   * Whether the control panel should start collapsed (showing only the toggle button)
+   * Whether the control panel should start collapsed.
+   *
    * @default true
    */
   collapsed?: boolean;
 
   /**
-   * Position of the control on the map
+   * Position of the control on the map.
+   *
    * @default 'top-right'
    */
-  position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  position?: EsriWaybackControlPosition;
 
   /**
-   * Title displayed in the control header
-   * @default 'Plugin Control'
+   * Title displayed in the control header.
+   *
+   * @default 'Esri Wayback'
    */
   title?: string;
 
   /**
-   * Width of the control panel in pixels
-   * @default 300
+   * Width of the control panel in pixels.
+   *
+   * @default 320
    */
   panelWidth?: number;
 
   /**
-   * Custom CSS class name for the control container
+   * Custom CSS class name for the control container.
    */
   className?: string;
+
+  /**
+   * Release number to select after Wayback releases are loaded.
+   * Defaults to the newest release.
+   */
+  initialReleaseNum?: number;
+
+  /**
+   * Stable MapLibre raster source id.
+   *
+   * @default 'esri-wayback-source'
+   */
+  sourceId?: string;
+
+  /**
+   * Stable MapLibre raster layer id.
+   *
+   * @default 'esri-wayback-layer'
+   */
+  layerId?: string;
+
+  /**
+   * Raster tile size in pixels.
+   *
+   * @default 256
+   */
+  tileSize?: number;
+
+  /**
+   * Maximum raster source zoom.
+   *
+   * @default 23
+   */
+  maxZoom?: number;
+
+  /**
+   * Query imagery metadata when users click the map.
+   *
+   * @default true
+   */
+  metadataOnClick?: boolean;
 }
 
-/**
- * Internal state of the plugin control
- */
-export interface PluginState {
-  /**
-   * Whether the control panel is currently collapsed
-   */
+export interface EsriWaybackState {
   collapsed: boolean;
-
-  /**
-   * Current panel width in pixels
-   */
   panelWidth: number;
-
-  /**
-   * Any custom state data
-   */
-  data?: Record<string, unknown>;
+  loading: boolean;
+  error: string | null;
+  releases: EsriWaybackRelease[];
+  selectedRelease: EsriWaybackRelease | null;
+  metadata: EsriWaybackMetadata;
+  metadataLoading: boolean;
+  selectedPoint: EsriWaybackPoint | null;
+  persistentBeforeLayerId: string;
+  persistentLayerStatus: string | null;
 }
 
-/**
- * Props for the React wrapper component
- */
-export interface PluginControlReactProps extends PluginControlOptions {
+export interface EsriWaybackControlReactProps extends EsriWaybackControlOptions {
   /**
-   * MapLibre GL map instance
+   * MapLibre GL map instance.
    */
   map: Map;
 
   /**
-   * Callback fired when the control state changes
+   * Callback fired when control state changes.
    */
-  onStateChange?: (state: PluginState) => void;
+  onStateChange?: (state: EsriWaybackState) => void;
+
+  /**
+   * Callback fired when the selected Wayback release changes.
+   */
+  onReleaseChange?: (release: EsriWaybackRelease | null) => void;
+
+  /**
+   * Callback fired when metadata query results change.
+   */
+  onMetadataChange?: (metadata: EsriWaybackMetadata) => void;
+
+  /**
+   * Callback fired when the control reports an error.
+   */
+  onError?: (error: string) => void;
 }
 
-/**
- * Event types emitted by the plugin control
- */
-export type PluginControlEvent = 'collapse' | 'expand' | 'statechange';
+export type EsriWaybackControlEvent =
+  | 'collapse'
+  | 'expand'
+  | 'statechange'
+  | 'releasechange'
+  | 'metadatachange'
+  | 'error';
 
-/**
- * Event handler function type
- */
-export type PluginControlEventHandler = (event: { type: PluginControlEvent; state: PluginState }) => void;
+export type EsriWaybackControlEventHandler = (event: {
+  type: EsriWaybackControlEvent;
+  state: EsriWaybackState;
+}) => void;

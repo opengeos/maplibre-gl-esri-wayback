@@ -1,1 +1,2 @@
-export { usePluginState } from './usePluginState';
+export { useEsriWaybackState } from './useEsriWaybackState';
+export type { UseEsriWaybackStateReturn } from './useEsriWaybackState';
