@@ -106,7 +106,9 @@ The main control class implementing MapLibre's `IControl` interface.
 | `collapsed` | `boolean` | `true` | Whether the panel starts collapsed |
 | `position` | `string` | `'top-right'` | Control position on the map |
 | `title` | `string` | `'Esri Wayback'` | Panel title |
-| `panelWidth` | `number` | `320` | Floating panel width in pixels |
+| `panelWidth` | `number` | `320` | Initial floating panel width in pixels |
+| `minPanelWidth` | `number` | `260` | Minimum panel width when resizing |
+| `maxPanelWidth` | `number` | `640` | Maximum panel width when resizing (also constrained to the map) |
 | `className` | `string` | `''` | Custom CSS class for the button container |
 | `initialReleaseNum` | `number` | newest release | Release number to select after loading |
 | `sourceId` | `string` | `'esri-wayback-source'` | Raster source id |

@@ -35,6 +35,8 @@ const DEFAULT_OPTIONS: Required<Omit<EsriWaybackControlOptions, 'initialReleaseN
   position: 'top-right',
   title: 'Esri Wayback',
   panelWidth: 320,
+  minPanelWidth: 260,
+  maxPanelWidth: 640,
   className: '',
   initialReleaseNum: undefined,
   sourceId: DEFAULT_SOURCE_ID,
@@ -60,6 +62,7 @@ export class EsriWaybackControl implements IControl {
   private _eventHandlers: EventHandlersMap = new globalThis.Map();
   private _baseLayerSnapshot: LayerVisibilitySnapshot | null = null;
   private _resizeHandler: (() => void) | null = null;
+  private _resizeDragCleanup: (() => void) | null = null;
   private _mapResizeHandler: (() => void) | null = null;
   private _mapClickHandler: ((event: { lngLat: { lng: number; lat: number } }) => void) | null =
     null;
@@ -104,6 +107,8 @@ export class EsriWaybackControl implements IControl {
   }
 
   onRemove(): void {
+    this._resizeDragCleanup?.();
+
     if (this._resizeHandler) {
       window.removeEventListener('resize', this._resizeHandler);
       this._resizeHandler = null;
@@ -498,7 +503,102 @@ export class EsriWaybackControl implements IControl {
     panel.appendChild(header);
     panel.appendChild(this._content);
 
+    panel.appendChild(this._createResizeHandle('left'));
+    panel.appendChild(this._createResizeHandle('right'));
+
     return panel;
+  }
+
+  private _createResizeHandle(side: 'left' | 'right'): HTMLElement {
+    const handle = document.createElement('div');
+    handle.className = `esri-wayback-control-resize-handle esri-wayback-control-resize-handle-${side}`;
+    handle.setAttribute('role', 'separator');
+    handle.setAttribute('aria-orientation', 'vertical');
+    handle.setAttribute('aria-label', 'Resize panel');
+    handle.addEventListener('pointerdown', (event) => this._startResize(event, side));
+    return handle;
+  }
+
+  private _startResize(event: PointerEvent, handleSide: 'left' | 'right'): void {
+    if (event.button !== 0 || !this._panel || !this._mapContainer) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    // End any drag that is somehow still active before starting a new one.
+    this._resizeDragCleanup?.();
+
+    const handle = event.currentTarget as HTMLElement;
+    const mapRect = this._mapContainer.getBoundingClientRect();
+    const panelRect = this._panel.getBoundingClientRect();
+    const position = this._getControlPosition();
+    const anchorSide: 'left' | 'right' =
+      position === 'top-left' || position === 'bottom-left' ? 'left' : 'right';
+    const isAnchoredEdge = handleSide === anchorSide;
+
+    const startX = event.clientX;
+    const startWidth = panelRect.width;
+    const startAnchorOffset =
+      anchorSide === 'right'
+        ? mapRect.right - panelRect.right
+        : panelRect.left - mapRect.left;
+
+    const margin = 8;
+    const minWidth = this._options.minPanelWidth;
+    // When dragging the anchored edge the opposite (free) edge stays fixed, so
+    // the panel can only grow until the anchor offset is consumed. Otherwise the
+    // free edge can grow until it reaches the far side of the map.
+    const boundsLimit = isAnchoredEdge
+      ? startWidth + startAnchorOffset - margin
+      : mapRect.width - startAnchorOffset - margin;
+    const maxWidth = Math.max(minWidth, Math.min(this._options.maxPanelWidth, boundsLimit));
+
+    try {
+      handle.setPointerCapture(event.pointerId);
+    } catch {
+      // Ignore environments without pointer capture support.
+    }
+
+    const onPointerMove = (moveEvent: PointerEvent) => {
+      const delta = moveEvent.clientX - startX;
+      const widthDelta = handleSide === 'right' ? delta : -delta;
+      const newWidth = Math.min(maxWidth, Math.max(minWidth, startWidth + widthDelta));
+      const appliedWidthDelta = newWidth - startWidth;
+
+      this._panel!.style.width = `${newWidth}px`;
+
+      // Keep the non-dragged edge visually fixed when resizing the anchored edge.
+      if (isAnchoredEdge) {
+        const newAnchorOffset = Math.max(0, startAnchorOffset - appliedWidthDelta);
+        this._panel!.style[anchorSide] = `${newAnchorOffset}px`;
+      }
+    };
+
+    const cleanup = () => {
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+      document.removeEventListener('pointercancel', onPointerUp);
+      try {
+        handle.releasePointerCapture(event.pointerId);
+      } catch {
+        // Ignore.
+      }
+      this._resizeDragCleanup = null;
+    };
+
+    const onPointerUp = () => {
+      cleanup();
+      const finalWidth = this._panel ? this._panel.getBoundingClientRect().width : startWidth;
+      this._state = { ...this._state, panelWidth: Math.round(finalWidth) };
+      this._emit('statechange');
+    };
+
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
+    document.addEventListener('pointercancel', onPointerUp);
+    this._resizeDragCleanup = cleanup;
   }
 
   private _renderContent(): void {

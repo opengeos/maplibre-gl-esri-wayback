@@ -45,6 +45,21 @@ export interface EsriWaybackControlOptions {
   panelWidth?: number;
 
   /**
+   * Minimum width of the control panel in pixels when resizing.
+   *
+   * @default 260
+   */
+  minPanelWidth?: number;
+
+  /**
+   * Maximum width of the control panel in pixels when resizing.
+   * The panel is also constrained to stay within the map container.
+   *
+   * @default 640
+   */
+  maxPanelWidth?: number;
+
+  /**
    * Custom CSS class name for the control container.
    */
   className?: string;

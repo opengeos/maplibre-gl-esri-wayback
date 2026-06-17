@@ -50,12 +50,46 @@
   font-size: 12px;
   line-height: 1.4;
   max-height: 540px;
-  max-width: min(420px, calc(100% - 20px));
+  max-width: calc(100% - 16px);
   min-width: 260px;
   overflow: hidden;
   padding: 8px;
   position: absolute;
   z-index: 1000;
+}
+
+.esri-wayback-control-resize-handle {
+  bottom: 0;
+  cursor: ew-resize;
+  position: absolute;
+  top: 0;
+  touch-action: none;
+  width: 6px;
+  z-index: 1;
+}
+
+.esri-wayback-control-resize-handle-left {
+  left: 0;
+}
+
+.esri-wayback-control-resize-handle-right {
+  right: 0;
+}
+
+.esri-wayback-control-resize-handle::after {
+  background: transparent;
+  bottom: 8px;
+  content: '';
+  left: 50%;
+  position: absolute;
+  top: 8px;
+  transform: translateX(-50%);
+  transition: background-color 0.15s ease;
+  width: 2px;
+}
+
+.esri-wayback-control-resize-handle:hover::after {
+  background: #2b7bb9;
 }
 
 .esri-wayback-control-panel.expanded {
