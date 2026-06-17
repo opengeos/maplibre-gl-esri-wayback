@@ -1,6 +1,6 @@
 {
   "name": "maplibre-gl-esri-wayback",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A MapLibre GL JS control for visualizing Esri World Imagery Wayback releases",
   "type": "module",
   "main": "./dist/index.cjs",
