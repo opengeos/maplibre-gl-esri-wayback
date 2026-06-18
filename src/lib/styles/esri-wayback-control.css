@@ -178,6 +178,37 @@
   font-weight: 600;
 }
 
+.esri-wayback-local-changes {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 8px;
+}
+
+.esri-wayback-local-changes-checkbox {
+  accent-color: #2b7bb9;
+  cursor: pointer;
+  flex: none;
+  height: 14px;
+  margin: 0;
+  width: 14px;
+}
+
+.esri-wayback-local-changes-checkbox:disabled {
+  cursor: not-allowed;
+}
+
+.esri-wayback-local-changes-label {
+  color: #3f4e5d;
+  font-weight: 600;
+}
+
+.esri-wayback-local-changes-status {
+  color: #697586;
+  font-size: 11px;
+  margin-left: auto;
+}
+
 .esri-wayback-slider {
   border: 1px solid #dde3ea;
   border-radius: 4px;

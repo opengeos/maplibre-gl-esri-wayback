@@ -7,6 +7,7 @@ export function EsriWaybackControlReact({
   onStateChange,
   onReleaseChange,
   onMetadataChange,
+  onLocalChangesChange,
   onError,
   ...options
 }: EsriWaybackControlReactProps): null {
@@ -33,6 +34,12 @@ export function EsriWaybackControlReact({
     if (onMetadataChange) {
       control.on('metadatachange', (event) => {
         onMetadataChange(event.state.metadata);
+      });
+    }
+
+    if (onLocalChangesChange) {
+      control.on('localchangeschange', (event) => {
+        onLocalChangesChange(event.state.localChanges);
       });
     }
 
@@ -76,6 +83,15 @@ export function EsriWaybackControlReact({
       control.selectRelease(options.initialReleaseNum);
     }
   }, [options.initialReleaseNum]);
+
+  useEffect(() => {
+    const control = controlRef.current;
+    if (!control || options.localChangesOnly === undefined) return;
+
+    if (control.getState().localChangesOnly !== options.localChangesOnly) {
+      control.setLocalChangesOnly(options.localChangesOnly);
+    }
+  }, [options.localChangesOnly]);
 
   return null;
 }

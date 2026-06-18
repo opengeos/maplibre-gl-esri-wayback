@@ -13,6 +13,10 @@ const DEFAULT_STATE: EsriWaybackState = {
   selectedPoint: null,
   persistentBeforeLayerId: '',
   persistentLayerStatus: null,
+  localChangesOnly: false,
+  localChangesLoading: false,
+  localChanges: null,
+  localChangesPoint: null,
 };
 
 export interface UseEsriWaybackStateReturn {

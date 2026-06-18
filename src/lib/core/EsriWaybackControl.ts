@@ -2,6 +2,7 @@ import type { IControl, Map as MapLibreMap } from 'maplibre-gl';
 import {
   getMetadata,
   getWaybackItems,
+  getWaybackItemsWithLocalChanges,
   type WaybackMetadata,
 } from '@esri/wayback-core';
 import type {
@@ -9,8 +10,10 @@ import type {
   EsriWaybackControlEventHandler,
   EsriWaybackControlOptions,
   EsriWaybackPoint,
+  EsriWaybackRelease,
   EsriWaybackState,
 } from './types';
+import { debounce } from '../utils';
 import {
   DEFAULT_LAYER_ID,
   DEFAULT_SOURCE_ID,
@@ -44,7 +47,10 @@ const DEFAULT_OPTIONS: Required<Omit<EsriWaybackControlOptions, 'initialReleaseN
   tileSize: 256,
   maxZoom: 23,
   metadataOnClick: true,
+  localChangesOnly: false,
 };
+
+const LOCAL_CHANGES_REFRESH_DELAY = 400;
 
 type EventHandlersMap = globalThis.Map<
   EsriWaybackControlEvent,
@@ -66,7 +72,10 @@ export class EsriWaybackControl implements IControl {
   private _mapResizeHandler: (() => void) | null = null;
   private _mapClickHandler: ((event: { lngLat: { lng: number; lat: number } }) => void) | null =
     null;
+  private _mapMoveEndHandler: (() => void) | null = null;
   private _metadataRequestId = 0;
+  private _localChangesRequestId = 0;
+  private _localChangesAbort: AbortController | null = null;
 
   constructor(options?: Partial<EsriWaybackControlOptions>) {
     this._options = { ...DEFAULT_OPTIONS, ...options };
@@ -82,6 +91,10 @@ export class EsriWaybackControl implements IControl {
       selectedPoint: null,
       persistentBeforeLayerId: '',
       persistentLayerStatus: null,
+      localChangesOnly: this._options.localChangesOnly,
+      localChangesLoading: false,
+      localChanges: null,
+      localChangesPoint: null,
     };
   }
 
@@ -123,6 +136,15 @@ export class EsriWaybackControl implements IControl {
       this._map.off('click', this._mapClickHandler);
       this._mapClickHandler = null;
     }
+
+    if (this._mapMoveEndHandler && this._map) {
+      this._map.off('moveend', this._mapMoveEndHandler);
+      this._mapMoveEndHandler = null;
+    }
+
+    this._localChangesRequestId++;
+    this._localChangesAbort?.abort();
+    this._localChangesAbort = null;
 
     this._restoreBasemap();
     this._removeWaybackLayer();
@@ -305,9 +327,153 @@ export class EsriWaybackControl implements IControl {
       this._renderContent();
       this._emit('releasechange');
       this._emit('statechange');
+
+      if (this._state.localChangesOnly) {
+        void this._loadLocalChanges();
+      }
     } catch (error) {
       this._setError(error instanceof Error ? error.message : 'Failed to load Wayback releases.');
     }
+  }
+
+  /**
+   * Toggle the "only versions with local changes" filter. When enabled, the
+   * release timeline is limited to the Wayback versions that introduced visible
+   * imagery changes at the current map center and zoom, and it refreshes as the
+   * map moves.
+   *
+   * @param enabled - Whether to restrict the timeline to versions with changes.
+   */
+  setLocalChangesOnly(enabled: boolean): void {
+    if (this._state.localChangesOnly === enabled) {
+      return;
+    }
+
+    this._state = { ...this._state, localChangesOnly: enabled };
+
+    if (enabled) {
+      void this._loadLocalChanges();
+    } else {
+      // Invalidate and cancel any in-flight change-detection query.
+      this._localChangesRequestId++;
+      this._localChangesAbort?.abort();
+      this._localChangesAbort = null;
+      this._state = {
+        ...this._state,
+        localChanges: null,
+        localChangesPoint: null,
+        localChangesLoading: false,
+      };
+      this._renderContent();
+      this._emit('localchangeschange');
+      this._emit('statechange');
+    }
+  }
+
+  private async _loadLocalChanges(): Promise<void> {
+    if (!this._map || !this._state.releases.length) {
+      return;
+    }
+
+    const center = this._map.getCenter();
+    const point: EsriWaybackPoint = { longitude: center.lng, latitude: center.lat };
+    const zoom = Math.round(this._map.getZoom());
+
+    const requestId = ++this._localChangesRequestId;
+    this._localChangesAbort?.abort();
+    const abortController = new AbortController();
+    this._localChangesAbort = abortController;
+
+    this._state = { ...this._state, localChangesLoading: true, error: null };
+    this._renderContent();
+    this._emit('statechange');
+
+    try {
+      const localChanges = await getWaybackItemsWithLocalChanges(point, zoom, abortController);
+
+      if (requestId !== this._localChangesRequestId) {
+        return;
+      }
+
+      this._localChangesAbort = null;
+      this._state = {
+        ...this._state,
+        localChanges,
+        localChangesPoint: point,
+        localChangesLoading: false,
+      };
+
+      const selectionChanged = this._reconcileSelectionWithLocalChanges();
+      this._renderContent();
+      this._emit('localchangeschange');
+      if (selectionChanged) {
+        this._emit('releasechange');
+      }
+      this._emit('statechange');
+    } catch (error) {
+      if (requestId !== this._localChangesRequestId || abortController.signal.aborted) {
+        return;
+      }
+
+      this._localChangesAbort = null;
+      this._state = { ...this._state, localChangesLoading: false };
+      this._setError(
+        error instanceof Error
+          ? error.message
+          : 'Failed to find Wayback versions with local changes.',
+      );
+    }
+  }
+
+  /**
+   * Keep the selected release within the filtered list. If the current
+   * selection is missing from the local-changes set, select the newest version
+   * that has changes so the slider and the displayed imagery stay in sync.
+   *
+   * @returns Whether the selected release changed.
+   */
+  private _reconcileSelectionWithLocalChanges(): boolean {
+    if (!this._state.localChangesOnly) {
+      return false;
+    }
+
+    const localChanges = this._state.localChanges;
+    if (!localChanges || !localChanges.length) {
+      return false;
+    }
+
+    const current = this._state.selectedRelease;
+    if (current && localChanges.some((release) => release.releaseNum === current.releaseNum)) {
+      return false;
+    }
+
+    const chronological = getChronologicalWaybackItems(localChanges);
+    const newest = chronological[chronological.length - 1] ?? null;
+    if (!newest || newest.releaseNum === current?.releaseNum) {
+      return false;
+    }
+
+    this._state = {
+      ...this._state,
+      selectedRelease: newest,
+      metadata: null,
+      metadataLoading: false,
+      selectedPoint: null,
+    };
+    this._applySelectedRelease();
+    return true;
+  }
+
+  /**
+   * The releases that drive the timeline slider: the local-changes subset when
+   * the filter is active and resolved, otherwise the full release list.
+   */
+  private _getActiveReleases(): EsriWaybackRelease[] {
+    if (this._state.localChangesOnly && this._state.localChanges) {
+      return this._state.localChanges;
+    }
+
+    return this._state.releases;
   }
 
   private _setError(message: string): void {
@@ -618,6 +784,7 @@ export class EsriWaybackControl implements IControl {
     }
 
     this._content.appendChild(this._createSelectedSummary());
+    this._content.appendChild(this._createLocalChangesToggle());
     this._content.appendChild(this._createTimeSlider());
     this._content.appendChild(this._createPersistentLayerForm());
     this._content.appendChild(this._createMetadataPanel());
@@ -652,20 +819,56 @@ export class EsriWaybackControl implements IControl {
     return summary;
   }
 
+  private _createLocalChangesToggle(): HTMLElement {
+    const wrapper = document.createElement('label');
+    wrapper.className = 'esri-wayback-local-changes';
+
+    const checkbox = document.createElement('input');
+    checkbox.className = 'esri-wayback-local-changes-checkbox';
+    checkbox.type = 'checkbox';
+    checkbox.checked = this._state.localChangesOnly;
+    checkbox.disabled = !this._state.releases.length;
+    checkbox.addEventListener('change', () => {
+      this.setLocalChangesOnly(checkbox.checked);
+    });
+
+    const text = document.createElement('span');
+    text.className = 'esri-wayback-local-changes-label';
+    text.textContent = 'Only versions with local changes';
+
+    wrapper.append(checkbox, text);
+
+    if (this._state.localChangesOnly && this._state.localChangesLoading) {
+      const status = document.createElement('span');
+      status.className = 'esri-wayback-local-changes-status';
+      status.textContent = 'Checking...';
+      wrapper.appendChild(status);
+    }
+
+    return wrapper;
+  }
+
   private _createTimeSlider(): HTMLElement {
     const wrapper = document.createElement('section');
     wrapper.className = 'esri-wayback-slider';
 
-    if (!this._state.releases.length) {
-      wrapper.appendChild(this._createStatus('No Wayback releases found.'));
+    if (this._state.localChangesOnly && this._state.localChangesLoading) {
+      wrapper.appendChild(this._createStatus('Finding versions with local changes...'));
       return wrapper;
     }
 
-    const chronologicalReleases = getChronologicalWaybackItems(this._state.releases);
-    const selectedIndex = getReleaseSliderIndex(
-      this._state.releases,
-      this._state.selectedRelease,
-    );
+    const activeReleases = this._getActiveReleases();
+
+    if (!activeReleases.length) {
+      const message = this._state.localChangesOnly
+        ? 'No versions with local changes at this location.'
+        : 'No Wayback releases found.';
+      wrapper.appendChild(this._createStatus(message));
+      return wrapper;
+    }
+
+    const chronologicalReleases = getChronologicalWaybackItems(activeReleases);
+    const selectedIndex = getReleaseSliderIndex(activeReleases, this._state.selectedRelease);
     const oldestRelease = chronologicalReleases[0];
     const newestRelease = chronologicalReleases[chronologicalReleases.length - 1];
 
@@ -735,7 +938,7 @@ export class EsriWaybackControl implements IControl {
   }
 
   private _selectReleaseBySliderIndex(sliderIndex: number): void {
-    const release = getReleaseBySliderIndex(this._state.releases, sliderIndex);
+    const release = getReleaseBySliderIndex(this._getActiveReleases(), sliderIndex);
 
     if (release) {
       this.selectRelease(release.releaseNum);
@@ -881,6 +1084,13 @@ export class EsriWaybackControl implements IControl {
       };
       this._map?.on('click', this._mapClickHandler);
     }
+
+    this._mapMoveEndHandler = debounce(() => {
+      if (this._state.localChangesOnly) {
+        void this._loadLocalChanges();
+      }
+    }, LOCAL_CHANGES_REFRESH_DELAY);
+    this._map?.on('moveend', this._mapMoveEndHandler);
   }
 
   private _getControlPosition():

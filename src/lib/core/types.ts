@@ -104,6 +104,16 @@ export interface EsriWaybackControlOptions {
    * @default true
    */
   metadataOnClick?: boolean;
+
+  /**
+   * Show only the Wayback releases that introduced local imagery changes at the
+   * current map center and zoom level. When enabled, the release list is
+   * filtered using `@esri/wayback-core`'s change detection and refreshes as the
+   * map moves. This mirrors Esri's "Only versions with local changes" option.
+   *
+   * @default false
+   */
+  localChangesOnly?: boolean;
 }
 
 export interface EsriWaybackState {
@@ -118,6 +128,23 @@ export interface EsriWaybackState {
   selectedPoint: EsriWaybackPoint | null;
   persistentBeforeLayerId: string;
   persistentLayerStatus: string | null;
+  /**
+   * Whether the release list is filtered to versions with local changes.
+   */
+  localChangesOnly: boolean;
+  /**
+   * Whether a change-detection query is currently in flight.
+   */
+  localChangesLoading: boolean;
+  /**
+   * Releases that introduced local imagery changes at `localChangesPoint`.
+   * `null` until the first change-detection query resolves.
+   */
+  localChanges: EsriWaybackRelease[] | null;
+  /**
+   * The map point used for the most recent change-detection query.
+   */
+  localChangesPoint: EsriWaybackPoint | null;
 }
 
 export interface EsriWaybackControlReactProps extends EsriWaybackControlOptions {
@@ -142,6 +169,12 @@ export interface EsriWaybackControlReactProps extends EsriWaybackControlOptions 
   onMetadataChange?: (metadata: EsriWaybackMetadata) => void;
 
   /**
+   * Callback fired when the set of versions with local changes is recomputed.
+   * Receives `null` when the local-changes filter is disabled.
+   */
+  onLocalChangesChange?: (releases: EsriWaybackRelease[] | null) => void;
+
+  /**
    * Callback fired when the control reports an error.
    */
   onError?: (error: string) => void;
@@ -153,6 +186,7 @@ export type EsriWaybackControlEvent =
   | 'statechange'
   | 'releasechange'
   | 'metadatachange'
+  | 'localchangeschange'
   | 'error';
 
 export type EsriWaybackControlEventHandler = (event: {
