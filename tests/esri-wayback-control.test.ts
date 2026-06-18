@@ -4,6 +4,7 @@ import type { Map as MapLibreMap } from 'maplibre-gl';
 import {
   getMetadata,
   getWaybackItems,
+  getWaybackItemsWithLocalChanges,
   type WaybackItem,
 } from '@esri/wayback-core';
 import { EsriWaybackControl } from '../src/lib/core/EsriWaybackControl';
@@ -11,6 +12,7 @@ import { EsriWaybackControl } from '../src/lib/core/EsriWaybackControl';
 vi.mock('@esri/wayback-core', () => ({
   getWaybackItems: vi.fn(),
   getMetadata: vi.fn(),
+  getWaybackItemsWithLocalChanges: vi.fn(),
 }));
 
 type Handler = (event?: { lngLat: { lng: number; lat: number } }) => void;
@@ -70,6 +72,7 @@ function createFakeMap() {
     on,
     off,
     getZoom: vi.fn(() => 15),
+    getCenter: vi.fn(() => ({ lng: -100.05, lat: 35.1 })),
     getLayer: vi.fn((id: string) => layers.find((layer) => layer.id === id)),
     getSource: vi.fn((id: string) => sources.get(id)),
     addSource: vi.fn((id: string, source: Record<string, unknown>) => {
@@ -126,6 +129,7 @@ describe('EsriWaybackControl', () => {
   beforeEach(() => {
     vi.mocked(getWaybackItems).mockResolvedValue(releases);
     vi.mocked(getMetadata).mockResolvedValue(null);
+    vi.mocked(getWaybackItemsWithLocalChanges).mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -321,5 +325,93 @@ describe('EsriWaybackControl', () => {
       'visible',
     );
     expect(fakeMap.sources.has('esri-wayback-source')).toBe(false);
+  });
+
+  it('filters the timeline to versions with local changes when toggled on', async () => {
+    const fakeMap = createFakeMap();
+    vi.mocked(getWaybackItemsWithLocalChanges).mockResolvedValue([releases[1]]);
+    const control = new EsriWaybackControl({ collapsed: false });
+    document.body.appendChild(control.onAdd(fakeMap.map));
+
+    await waitFor(() => {
+      expect(control.getState().selectedRelease?.releaseNum).toBe(102);
+    });
+
+    const checkbox = document.querySelector<HTMLInputElement>(
+      '.esri-wayback-local-changes-checkbox',
+    );
+    expect(checkbox).toBeTruthy();
+    fireEvent.click(checkbox!);
+
+    await waitFor(() => {
+      expect(control.getState().localChanges?.length).toBe(1);
+    });
+
+    expect(getWaybackItemsWithLocalChanges).toHaveBeenCalledWith(
+      { longitude: -100.05, latitude: 35.1 },
+      15,
+      expect.any(AbortController),
+    );
+    // The timeline now exposes only the single version with changes, and the
+    // selection moves into that filtered set so the imagery stays in sync.
+    const slider = document.querySelector<HTMLInputElement>('.esri-wayback-range');
+    expect(slider?.max).toBe('0');
+    expect(control.getState().selectedRelease?.releaseNum).toBe(80);
+    expect(fakeMap.sources.get('esri-wayback-source')?.tiles).toEqual([
+      'https://example.com/tile/80/{z}/{y}/{x}',
+    ]);
+  });
+
+  it('restores the full timeline when the local-changes filter is toggled off', async () => {
+    const fakeMap = createFakeMap();
+    vi.mocked(getWaybackItemsWithLocalChanges).mockResolvedValue([releases[1]]);
+    const control = new EsriWaybackControl({ collapsed: false, localChangesOnly: true });
+    document.body.appendChild(control.onAdd(fakeMap.map));
+
+    await waitFor(() => {
+      expect(control.getState().localChanges?.length).toBe(1);
+    });
+    expect(document.querySelector<HTMLInputElement>('.esri-wayback-range')?.max).toBe('0');
+
+    control.setLocalChangesOnly(false);
+
+    expect(control.getState().localChanges).toBeNull();
+    expect(document.querySelector<HTMLInputElement>('.esri-wayback-range')?.max).toBe('1');
+  });
+
+  it('shows a message when no versions with local changes exist at the location', async () => {
+    const fakeMap = createFakeMap();
+    vi.mocked(getWaybackItemsWithLocalChanges).mockResolvedValue([]);
+    const control = new EsriWaybackControl({ collapsed: false, localChangesOnly: true });
+    document.body.appendChild(control.onAdd(fakeMap.map));
+
+    await waitFor(() => {
+      expect(document.body.textContent).toContain('No versions with local changes at this location.');
+    });
+    // The selection falls back to the newest overall release.
+    expect(control.getState().selectedRelease?.releaseNum).toBe(102);
+  });
+
+  it('refreshes versions with local changes after the map stops moving', async () => {
+    vi.useFakeTimers();
+    try {
+      const fakeMap = createFakeMap();
+      vi.mocked(getWaybackItemsWithLocalChanges).mockResolvedValue([releases[1]]);
+      const control = new EsriWaybackControl({ collapsed: false, localChangesOnly: true });
+      document.body.appendChild(control.onAdd(fakeMap.map));
+
+      await vi.waitFor(() => {
+        expect(getWaybackItemsWithLocalChanges).toHaveBeenCalledTimes(1);
+      });
+
+      fakeMap.emit('moveend', { lngLat: { lng: 0, lat: 0 } });
+      vi.advanceTimersByTime(500);
+
+      await vi.waitFor(() => {
+        expect(getWaybackItemsWithLocalChanges).toHaveBeenCalledTimes(2);
+      });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

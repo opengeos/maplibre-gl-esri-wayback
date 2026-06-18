@@ -15,6 +15,7 @@ A MapLibre GL JS control for visualizing Esri World Imagery Wayback releases wit
 - Older and newer release buttons for precise one-release stepping.
 - Basemap replacement behavior that keeps symbol layers visible as labels.
 - Add the selected Wayback image as a persistent raster layer with an optional before-layer ID.
+- "Only versions with local changes" filter that limits the timeline to the releases that actually changed at the current map center and zoom (mirrors Esri's option), refreshing as the map moves.
 - Click-to-query imagery metadata for the selected release and location.
 - TypeScript types, Vite library build, and React wrapper.
 
@@ -116,11 +117,13 @@ The main control class implementing MapLibre's `IControl` interface.
 | `tileSize` | `number` | `256` | Raster tile size |
 | `maxZoom` | `number` | `23` | Raster source max zoom |
 | `metadataOnClick` | `boolean` | `true` | Query metadata when the map is clicked |
+| `localChangesOnly` | `boolean` | `false` | Start with the timeline filtered to versions with local changes |
 
 Methods:
 
 - `toggle()`, `expand()`, `collapse()`
 - `selectRelease(releaseNum)`
+- `setLocalChangesOnly(enabled)`
 - `addSelectedReleaseAsPersistentLayer(beforeLayerId?)`
 - `getState()`
 - `setState(state)`
@@ -134,7 +137,28 @@ Events:
 - `statechange`
 - `releasechange`
 - `metadatachange`
+- `localchangeschange`
 - `error`
+
+#### Only versions with local changes
+
+Esri's Wayback viewer can hide releases that did not change a given location so
+you don't have to step through dozens of identical images. This control exposes
+the same behavior through a checkbox in the panel, the `localChangesOnly` option,
+and the `setLocalChangesOnly(enabled)` method:
+
+```typescript
+const control = new EsriWaybackControl({ localChangesOnly: true });
+
+// or toggle it at runtime
+control.setLocalChangesOnly(true);
+```
+
+When enabled, the timeline is limited to the releases that introduced visible
+imagery changes at the current map center and zoom (computed with
+`@esri/wayback-core`'s change detection), and it refreshes automatically as the
+map moves. Listen for `localchangeschange` (or use the React
+`onLocalChangesChange` prop) to react to the recomputed set.
 
 ### EsriWaybackControlReact
 
@@ -148,6 +172,7 @@ Props include all control options plus:
 | `onStateChange` | `function` | Callback fired when state changes |
 | `onReleaseChange` | `function` | Callback fired when the selected release changes |
 | `onMetadataChange` | `function` | Callback fired when metadata changes |
+| `onLocalChangesChange` | `function` | Callback fired when the set of versions with local changes is recomputed |
 | `onError` | `function` | Callback fired when an error is reported |
 
 ## Development
