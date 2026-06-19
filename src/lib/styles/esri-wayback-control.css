@@ -93,7 +93,8 @@
 }
 
 .esri-wayback-control-panel.expanded {
-  display: block;
+  display: flex;
+  flex-direction: column;
 }
 
 .esri-wayback-control-header {
@@ -134,10 +135,12 @@
 
 .esri-wayback-control-content {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 8px;
-  max-height: 488px;
-  overflow: hidden;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .esri-wayback-status {
