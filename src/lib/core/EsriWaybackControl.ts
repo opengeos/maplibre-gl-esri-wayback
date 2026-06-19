@@ -52,6 +52,10 @@ const DEFAULT_OPTIONS: Required<Omit<EsriWaybackControlOptions, 'initialReleaseN
 
 const LOCAL_CHANGES_REFRESH_DELAY = 400;
 
+// Smallest height the expanded panel may shrink to on short maps before it
+// falls back to scrolling its content.
+const MIN_PANEL_HEIGHT = 200;
+
 type EventHandlersMap = globalThis.Map<
   EsriWaybackControlEvent,
   Set<EsriWaybackControlEventHandler>
@@ -1124,29 +1128,42 @@ export class EsriWaybackControl implements IControl {
     const buttonLeft = buttonRect.left - mapRect.left;
     const buttonRight = mapRect.right - buttonRect.right;
     const panelGap = 5;
+    const edgeMargin = 10;
 
     this._panel.style.top = '';
     this._panel.style.bottom = '';
     this._panel.style.left = '';
     this._panel.style.right = '';
 
+    const verticalOffset = buttonRect.height + panelGap;
+    let anchorOffset = buttonTop + verticalOffset;
+
     switch (position) {
       case 'top-left':
-        this._panel.style.top = `${buttonTop + buttonRect.height + panelGap}px`;
+        this._panel.style.top = `${buttonTop + verticalOffset}px`;
         this._panel.style.left = `${buttonLeft}px`;
+        anchorOffset = buttonTop + verticalOffset;
         break;
       case 'top-right':
-        this._panel.style.top = `${buttonTop + buttonRect.height + panelGap}px`;
+        this._panel.style.top = `${buttonTop + verticalOffset}px`;
         this._panel.style.right = `${buttonRight}px`;
+        anchorOffset = buttonTop + verticalOffset;
         break;
       case 'bottom-left':
-        this._panel.style.bottom = `${buttonBottom + buttonRect.height + panelGap}px`;
+        this._panel.style.bottom = `${buttonBottom + verticalOffset}px`;
         this._panel.style.left = `${buttonLeft}px`;
+        anchorOffset = buttonBottom + verticalOffset;
         break;
       case 'bottom-right':
-        this._panel.style.bottom = `${buttonBottom + buttonRect.height + panelGap}px`;
+        this._panel.style.bottom = `${buttonBottom + verticalOffset}px`;
         this._panel.style.right = `${buttonRight}px`;
+        anchorOffset = buttonBottom + verticalOffset;
         break;
     }
+
+    // Let the panel grow into the available map height before it scrolls,
+    // instead of clamping to a fixed max-height while space sits unused.
+    const availableHeight = mapRect.height - anchorOffset - edgeMargin;
+    this._panel.style.maxHeight = `${Math.max(availableHeight, MIN_PANEL_HEIGHT)}px`;
   }
 }
